@@ -1,4 +1,4 @@
-# 🎫 CompraIngresso — Venda de Ingressos com Fila Virtual
+# CompraIngresso — Venda de Ingressos com Fila Virtual
 
 Simulação de uma venda de ingressos de show no estilo Ticketmaster/Eventim, feita em Java para a disciplina de **Programação Concorrente e Paralela**.
 
