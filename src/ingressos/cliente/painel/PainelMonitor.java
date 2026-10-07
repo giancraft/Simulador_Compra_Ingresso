@@ -4,10 +4,7 @@ import ingressos.comum.Conexao;
 import ingressos.comum.Config;
 import ingressos.comum.Mensagem;
 
-import javax.swing.BorderFactory;
 import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
@@ -15,20 +12,17 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.GridLayout;
 import java.io.IOException;
 import java.net.Socket;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static ingressos.comum.Mensagem.Tipo.MONITORAR;
 
 /**
  * Janela de monitoramento: conecta com {@code MONITORAR}, interpreta os eventos do servidor e
- * atualiza a {@link GradeAssentos}, o {@link PainelGuiches}, os contadores, o status e o log.
+ * atualiza o {@link CabecalhoPainel}, a {@link GradeAssentos}, o {@link PainelGuiches} e o log.
  * Uma thread lê o socket e repassa cada mensagem à EDT com {@link SwingUtilities#invokeLater}.
  */
 public final class PainelMonitor {
@@ -38,30 +32,21 @@ public final class PainelMonitor {
     private final JFrame janela = new JFrame("Monitor — Venda de Ingressos");
     private final GradeAssentos grade = new GradeAssentos();
     private final PainelGuiches guiches = new PainelGuiches();
-    private final JLabel contadores = new JLabel(" ");
-    private final JLabel status = new JLabel(" ");
+    private final CabecalhoPainel cabecalho = new CabecalhoPainel();
     private final JTextArea log = new JTextArea(12, 80);
-    private final Map<String, Integer> totais = new HashMap<>();
 
     private PainelMonitor() {
         log.setEditable(false);
         log.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
-        contadores.setFont(contadores.getFont().deriveFont(Font.BOLD, 14f));
         guiches.setPreferredSize(new Dimension(320, 0));
-        JPanel topo = new JPanel(new GridLayout(2, 1));
-        topo.setBorder(BorderFactory.createEmptyBorder(6, 8, 6, 8));
-        topo.add(contadores);
-        topo.add(status);
-
         janela.setLayout(new BorderLayout());
-        janela.add(topo, BorderLayout.NORTH);
+        janela.add(cabecalho, BorderLayout.NORTH);
         janela.add(grade, BorderLayout.CENTER);
         janela.add(guiches, BorderLayout.EAST);
         janela.add(new JScrollPane(log), BorderLayout.SOUTH);
         janela.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         janela.setSize(1100, 750);
         janela.setLocationRelativeTo(null);
-        atualizarContadores();
     }
 
     /**
@@ -99,6 +84,7 @@ public final class PainelMonitor {
             case CONFIG -> {
                 grade.configurar(Integer.parseInt(m.arg(0)), Integer.parseInt(m.arg(1)));
                 guiches.configurar(Integer.parseInt(m.arg(2)), Integer.parseInt(m.arg(3)));
+                cabecalho.configurar(Integer.parseInt(m.arg(0)) * Integer.parseInt(m.arg(1)), Integer.parseInt(m.arg(2)));
                 janela.revalidate();
             }
             case MAPA -> grade.pintarMapa(m.args());
@@ -111,27 +97,27 @@ public final class PainelMonitor {
     private void tratarEvento(String tipo, String nome, String assento, String detalhe) {
         switch (tipo) {
             case "MAPA" -> grade.pintarMapa(List.of(detalhe.split(" ")));
-            case "STATUS" -> status.setText("Pools (ativas/threads/fila/concluídas): " + detalhe);
+            case "STATUS" -> cabecalho.atualizarStatus(detalhe);
             case "ENTROU_AREA" -> guiches.ocupar(nome);
             case "RESERVOU" -> grade.pintar(assento, GradeAssentos.RESERVADO);
             case "VENDEU" -> {
                 guiches.liberar(nome, "comprou " + assento, new Color(0x43A047));
                 grade.pintar(assento, GradeAssentos.VENDIDO);
-                contar("Vendidos");
+                cabecalho.registrarVenda();
             }
             case "EXPIROU" -> {
                 guiches.liberar(nome, "expirou", GradeAssentos.VENDIDO);
                 grade.pintar(assento, GradeAssentos.EXPIRADO);
-                contar("Expirados");
+                cabecalho.registrarExpiracao();
             }
             case "RECUSADO" -> {
                 guiches.liberar(nome, "pagamento recusado", GradeAssentos.EXPIRADO);
                 grade.pintar(assento, GradeAssentos.LIVRE);
-                contar("Recusados");
+                cabecalho.registrarRecusa();
             }
             case "DESCONECTOU" -> {
                 guiches.liberar(nome, "desconectou", Color.GRAY);
-                contar("Desconectados");
+                cabecalho.registrarDesistencia();
             }
             case "ESGOTADO" -> guiches.liberar(nome, "esgotado", Color.GRAY);
             default -> { }
@@ -139,17 +125,6 @@ public final class PainelMonitor {
         if (!tipo.equals("MAPA") && !tipo.equals("STATUS")) {
             registrar(String.format("%-12s %-10s %-4s %s", tipo, nome, assento, detalhe));
         }
-    }
-
-    private void contar(String chave) {
-        totais.merge(chave, 1, Integer::sum);
-        atualizarContadores();
-    }
-
-    private void atualizarContadores() {
-        contadores.setText(String.format("Vendidos: %d   Expirados: %d   Recusados: %d   Desconectados: %d",
-                totais.getOrDefault("Vendidos", 0), totais.getOrDefault("Expirados", 0),
-                totais.getOrDefault("Recusados", 0), totais.getOrDefault("Desconectados", 0)));
     }
 
     private void registrar(String linha) {
