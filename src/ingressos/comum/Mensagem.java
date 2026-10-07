@@ -1,4 +1,4 @@
-package ingressos;
+package ingressos.comum;
 
 import java.util.Arrays;
 import java.util.List;

@@ -1,15 +1,17 @@
-package ingressos;
+package ingressos.servidor.dominio;
+
+import ingressos.comum.Conexao;
+import ingressos.comum.Mensagem;
 
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
-import static ingressos.Mensagem.Tipo.*;
+import static ingressos.comum.Mensagem.Tipo.*;
 
 /**
  * Cliente conectado ao servidor. É um monitor: as transições de estado são {@code synchronized},
@@ -135,10 +137,10 @@ public final class Sessao {
      *
      * @param destino  estado final
      * @param assentos mapa de assentos
-     * @param vagas    semáforo da área de compra
+     * @param area     área de compra cuja vaga é devolvida
      * @return {@code true} se esta chamada finalizou a compra
      */
-    public synchronized boolean finalizar(Estado destino, Assentos assentos, Semaphore vagas) {
+    public synchronized boolean finalizar(Estado destino, Assentos assentos, AreaCompra area) {
         if (!transitar(Estado.COMPRANDO, destino)) {
             return false;
         }
@@ -150,7 +152,7 @@ public final class Sessao {
                 assentos.liberar(assento, id);
             }
         }
-        vagas.release(); // liberado só aqui: um release por sessão
+        area.liberarVaga(); // liberada só aqui: uma vez por sessão
         return true;
     }
 

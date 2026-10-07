@@ -1,4 +1,6 @@
-package ingressos;
+package ingressos.servidor.fila;
+
+import ingressos.servidor.dominio.Sessao;
 
 import java.util.Collections;
 import java.util.List;
@@ -10,7 +12,7 @@ public enum PoliticaFila {
     /** Embaralha: quem chegou cedo não tem vantagem. */
     SORTEIO {
         @Override
-        void ordenar(List<Sessao> sessoes, Random random) {
+        public void ordenar(List<Sessao> sessoes, Random random) {
             Collections.shuffle(sessoes, random);
         }
     },
@@ -18,7 +20,7 @@ public enum PoliticaFila {
     /** Mantém a ordem de chegada. */
     FIFO {
         @Override
-        void ordenar(List<Sessao> sessoes, Random random) {
+        public void ordenar(List<Sessao> sessoes, Random random) {
         }
     };
 
@@ -26,5 +28,5 @@ public enum PoliticaFila {
      * @param sessoes sessões em ordem de chegada; reordenadas no lugar
      * @param random  gerador usado pelo sorteio
      */
-    abstract void ordenar(List<Sessao> sessoes, Random random);
+    public abstract void ordenar(List<Sessao> sessoes, Random random);
 }

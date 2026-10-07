@@ -1,4 +1,4 @@
-package ingressos;
+package ingressos.comum;
 
 import java.io.BufferedReader;
 import java.io.Closeable;

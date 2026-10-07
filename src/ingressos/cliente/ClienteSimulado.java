@@ -1,4 +1,8 @@
-package ingressos;
+package ingressos.cliente;
+
+import ingressos.comum.Conexao;
+import ingressos.comum.Config;
+import ingressos.comum.Mensagem;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -6,13 +10,13 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 
-import static ingressos.Mensagem.Tipo.*;
+import static ingressos.comum.Mensagem.Tipo.*;
 
 /**
  * Cliente simulado. Um único laço lê mensagens e reage; o tempo humano de preenchimento
  * é sorteado aqui, o servidor só conhece o prazo.
  */
-public final class Robo implements Callable<String> {
+public final class ClienteSimulado implements Callable<String> {
 
     private final Config config;
     private final String nome;
@@ -20,12 +24,12 @@ public final class Robo implements Callable<String> {
     private final long tempoHumanoMs;
 
     /**
-     * @param numero número do robô (gera nome e CPF únicos)
+     * @param numero número do cliente (gera nome e CPF únicos)
      * @param config configuração
      */
-    public Robo(int numero, Config config) {
+    public ClienteSimulado(int numero, Config config) {
         this.config = config;
-        this.nome = "robo" + numero;
+        this.nome = "cliente" + numero;
         this.cpf = String.valueOf(10_000_000_000L + numero);
         this.tempoHumanoMs = ThreadLocalRandom.current()
                 .nextLong(config.tempoHumanoMinSeg() * 1000L, config.tempoHumanoMaxSeg() * 1000L + 1);
